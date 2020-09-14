@@ -1,4 +1,27 @@
 const graphql = require('graphql');
+const _ = require('lodash');
+
+const movies = [
+    {
+        id: '1',
+        title: 'The Godfather',
+        description: 'The aging patriarch of an organized crime dynasty transfers control of his clandestine empire to his reluctant son.',
+        year: 1972
+    },
+    {
+        id: '2',
+        title: 'Scarface',
+        description: 'In Miami in 1980, a determined Cuban immigrant takes over a drug cartel and succumbs to greed.',
+        year: 1980
+    },
+    {
+        id: '3',
+        title: 'Pulp Fiction',
+        description: 'The lives of two mob hitmen, a boxer, a gangster\'s wife, and a pair of diner bandits intertwine in four tales of violence and redemption.',
+        year: 1994
+    }
+];
+
 
 const {
     GraphQLSchema,
@@ -24,7 +47,7 @@ const RootQuery = new GraphQLObjectType({
             type: MovieType,
             args: { id: { type:GraphQLString } }, //erişim ne ile olacak ?
             resolve(parent, args){ //parent iki tablo arasındaki ilişkiyi sağlar
-                //getdata
+                return _.find(movies, { id: args.id });
             } //DB bağlantıları
         }
     }
