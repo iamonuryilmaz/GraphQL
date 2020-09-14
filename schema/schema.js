@@ -14,14 +14,14 @@ const movies = [
         title: 'Scarface',
         description: 'In Miami in 1980, a determined Cuban immigrant takes over a drug cartel and succumbs to greed.',
         year: 1980,
-        directorId: '3'
+        directorId: '1'
     },
     {
         id: '3',
         title: 'Pulp Fiction',
         description: 'The lives of two mob hitmen, a boxer, a gangster\'s wife, and a pair of diner bandits intertwine in four tales of violence and redemption.',
         year: 1994,
-        directorId: '2'
+        directorId: '1'
     }
 ];
 
@@ -49,7 +49,8 @@ const {
     GraphQLObjectType,
     GraphQLString,
     GraphQLInt,
-    GraphQLID
+    GraphQLID,
+    GraphQLList
 } = graphql;
 
 const MovieType = new GraphQLObjectType({
@@ -74,7 +75,13 @@ const DirectorType = new GraphQLObjectType({
     fields : () => ({
         id: { type: GraphQLID },
         name: { type: GraphQLString },
-        birth: { type: GraphQLInt }
+        birth: { type: GraphQLInt },
+        movies:{
+            type: new GraphQLList(MovieType),//çoklu data olacağından GraphQLList kullanıldı.
+            resolve(parent, args){
+                return _.filter(movies, { directorId : parent.id })
+            }
+        }
     })
 });
 
@@ -93,6 +100,18 @@ const RootQuery = new GraphQLObjectType({
             args: { id: { type:GraphQLID } },
             resolve(parent, args){
                 return _.find(directors, { id: args.id });
+            }
+        },
+        movies: {
+            type : new GraphQLList(MovieType),
+            resolve(parent, args){
+                return movies
+            }
+        },
+        directors: {
+            type : new GraphQLList(DirectorType),
+            resolve(parent, args){
+                return directors
             }
         }
     }
