@@ -1,111 +1,58 @@
 const graphql = require('graphql');
 const _ = require('lodash');
-
+const { ApolloServer, gql } = require('apollo-server-express');
+const { directors, movies } = require('../data');
 //Mongo DB Models
 
-const Movie = require('../models/Movie');
-const Director = require('../models/Director');
 
+const typeDefs= gql`
+  type Query {
+  	director(id: ID!): Director!
+  	directors: [Director!]!
+  	
+  	movie(id: ID!): Movie!
+  	movies: [Movie!]!
+  }
+  
+  type Director {
+  	id: ID!
+  	name: String!
+  	birth: Int
+  	movies: [Movie!]!
+  }
+  
+  type Movie {
+  	id: ID!
+  	title: String!
+  	description: String
+  	year: Int!
+  	director: Director!
+  }
+`;
 
-const {
-    GraphQLSchema,
-    GraphQLObjectType,
-    GraphQLString,
-    GraphQLInt,
-    GraphQLID,
-    GraphQLList
-} = graphql;
+// Provide resolver functions for your schema fields
+const resolvers = {
+    Query: {
+        director: (parent, args) => {
+            return directors.find(director => director.id === args.id)
+        },
+        directors: () => directors,
 
-const MovieType = new GraphQLObjectType({
-    name: 'Movie',
-    fields : () => ({
-        id: { type: GraphQLID },
-        title: { type: GraphQLString },
-        description: { type: GraphQLString },
-        year: { type: GraphQLInt },
-        director:{
-            type: DirectorType,
-            resolve(parent, args){
-                //console.log(parent)
-                return _.find(directors, { id: parent.directorId });
-            }
+        movie: (parent, args) => {
+            return movies.find(movie => movie.id === args.id)
+        },
+        movies: () => movies
+    },
+    Movie: {
+        director: (parent, args) => {
+            return directors.find(director => director.id === parent.directorId)
         }
-    })
-});
-
-const DirectorType = new GraphQLObjectType({
-    name: 'Director',
-    fields : () => ({
-        id: { type: GraphQLID },
-        name: { type: GraphQLString },
-        birth: { type: GraphQLInt },
-        movies:{
-            type: new GraphQLList(MovieType),//çoklu data olacağından GraphQLList kullanıldı.
-            resolve(parent, args){
-                return _.filter(movies, { directorId : parent.id })
-            }
-        }
-    })
-});
-
-const RootQuery = new GraphQLObjectType({
-    name: 'RootQueryType',
-    fields:{
-        movie: {
-            type: MovieType,
-            args: { id: { type:GraphQLID } }, //erişim ne ile olacak ?
-            resolve(parent, args){ //parent iki tablo arasındaki ilişkiyi sağlar
-                return _.find(movies, { id: args.id });
-            } //DB bağlantıları
-        },
-        director: {
-            type: DirectorType,
-            args: { id: { type:GraphQLID } },
-            resolve(parent, args){
-                return _.find(directors, { id: args.id });
-            }
-        },
-        movies: {
-            type : new GraphQLList(MovieType),
-            resolve(parent, args){
-                return movies
-            }
-        },
-        directors: {
-            type : new GraphQLList(DirectorType),
-            resolve(parent, args){
-                return directors
-            }
+    },
+    Director: {
+        movies: (parent, args) => {
+            return movies.filter(movie => movie.directorId === parent.id)
         }
     }
-});
+};
 
-const Mutation = new GraphQLObjectType({
-   name: 'Mutation',
-    fields: {
-       addMovie: {
-           type: MovieType,
-           args: {
-               title:{ type: GraphQLString },
-               description:{ type: GraphQLString },
-               year:{ type: GraphQLInt },
-               directorId:{ type: GraphQLString },
-           },
-           resolve(parent, args){
-               const movie = new Movie({
-                   title: args.title,
-                   description: args.description,
-                   year: args.year,
-                   directorId: args.directorId
-               });
-
-               return movie.save()
-           }
-       }
-    }
-});
-
-module.exports = new GraphQLSchema({
-    query: RootQuery,
-    mutation: Mutation
-});
+module.exports ={ typeDefs , resolvers};
